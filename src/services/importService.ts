@@ -1,10 +1,7 @@
 import JSZip from 'jszip';
 import type { FileNode, Project} from '../store/useStore';
 import { getLanguage } from '../store/useStore';
-
-function generateId(): string {
-  return generateId();
-}
+import { generateId } from '../shared/utils/id';
 
 // Binary dosya uzantıları - bunları atla
 const binaryExtensions = new Set([
