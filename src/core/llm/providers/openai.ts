@@ -3,6 +3,7 @@
  * Also handles custom OpenAI-compatible endpoints (LM Studio, vLLM, etc.)
  */
 import type { ILLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMConfig, ModelInfo, ProviderCapabilities, LLMErrorShape } from '../types';
+import { LLMError } from '../types';
 import { BaseAdapter } from './adapters/base';
 
 const MODELS: ModelInfo[] = [
@@ -80,15 +81,14 @@ export class OpenAIProvider extends BaseAdapter implements ILLMProvider {
 }
 
 export class CustomProvider extends OpenAIProvider {
-  override readonly capabilities: ProviderCapabilities = {
-    streaming: true, tools: false, vision: false, jsonMode: true, reasoning: false,
-    imageGeneration: false, embeddings: false, freeAccess: true, requiresApiKey: false, localOnly: false,
-  };
+  readonly name = 'custom' as const;
+  readonly displayName = 'Custom OpenAI-Compatible';
+  override readonly capabilities = { ...super.capabilities, freeAccess: true };
 
   override getModels(): ModelInfo[] { return []; }
 
   override validateConfig(config: LLMConfig): LLMErrorShape | null {
-    if (!config.baseUrl) return { code: 'NO_BASE_URL', message: 'Custom provider için baseUrl gerekli', provider: 'custom' as const, retryable: false };
+    if (!config.baseUrl) return { code: 'NO_BASE_URL', message: 'Custom provider için baseUrl gerekli', provider: this.name, retryable: false };
     return null;
   }
 }
