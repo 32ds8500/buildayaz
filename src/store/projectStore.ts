@@ -7,11 +7,12 @@ import type { Project, FileNode } from './types';
 import { scheduleSave, loadProjectsSync } from './persistence';
 import { updateInTree, deleteFromTree, renameInTree, addToTree, useEditorStore } from './editorStore';
 import { generateId } from '../shared/utils/id';
+import { markDirty } from './autosave';
 import { getLanguage, findFirstFile, getDefaultFiles } from './projectUtils';
 
 // ─── Store ────────────────────────────────────────────────────────
 
-interface ProjectState {
+export interface ProjectState {
   projects: Project[];
   currentProject: Project | null;
 
@@ -85,6 +86,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const updated = { ...currentProject, files: newFiles };
     const newProjects = projects.map(p => p.id === updated.id ? updated : p);
     persist(newProjects); // debounced — hot path
+    markDirty();           // trigger idle-timeout autosave
     set({ currentProject: updated, projects: newProjects });
     useEditorStore.getState().updateOpenFileContent(path, content);
   },
@@ -121,3 +123,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     useEditorStore.getState().syncOpenFiles(newFiles);
   },
 }));
+
+// ─── Stable selectors ────────────────────────────────────────────────────────
+export const selectProjects        = (s: ProjectState) => s.projects;
+export const selectCurrentProject  = (s: ProjectState) => s.currentProject;
+export const selectProjectActions  = (s: ProjectState) => ({
+  createProject:     s.createProject,
+  setCurrentProject: s.setCurrentProject,
+  deleteProject:     s.deleteProject,
+  importProject:     s.importProject,
+  updateFileContent: s.updateFileContent,
+  addFile:           s.addFile,
+  deleteFile:        s.deleteFile,
+  renameFile:        s.renameFile,
+});
