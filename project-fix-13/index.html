@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net blob:;
+    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    img-src 'self' data: blob: https:;
+    connect-src 'self' https://api.anthropic.com https://generativelanguage.googleapis.com https://api.groq.com https://openrouter.ai https://text.pollinations.ai https://image.pollinations.ai https://api.together.xyz https://api-inference.huggingface.co http://localhost:11434 https://api.openai.com;
+    frame-src blob:;
+    worker-src 'self' blob:;
+    font-src 'self' data:;
+  ">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <title>KodYap.ai - Yapay Zeka Destekli Kod Editörü</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
