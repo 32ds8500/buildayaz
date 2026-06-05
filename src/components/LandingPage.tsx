@@ -1,8 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { useStore } from '../store/useStore';
 import { importFromZip, importFromFiles } from '../services/importService';
 import toast from 'react-hot-toast';
 import {
+import { useProjectStore } from '../store/projectStore';
+import { useUIStore } from '../store/uiStore';
+import { logger } from '../core/llm/logging/logger';
+const log = logger.forModule('LandingPage');
   Zap, Code2, Globe, Server, Layout, Rocket,
   ArrowRight, Sparkles, Terminal, Eye, FolderOpen,
   Clock, Trash2, ChevronRight, Plus, Star, Shield,
@@ -57,7 +60,7 @@ const features = [
 ];
 
 export const LandingPage: React.FC = () => {
-  const { createProject, projects, setCurrentProject, deleteProject, importProject } = useStore();
+  const { createProject, projects, setCurrentProject, deleteProject, importProject } = useProjectStore();
   const [projeAdi, setProjeAdi] = useState('');
   const [projeAciklama, setProjeAciklama] = useState('');
   const [seciliSablon, setSeciliSablon] = useState('react');
@@ -413,7 +416,7 @@ export const LandingPage: React.FC = () => {
       <input
         ref={folderInputRef}
         type="file"
-         
+        // eslint-disable-next-line react/no-unknown-property
         {...({ webkitdirectory: '' } as React.InputHTMLAttributes<HTMLInputElement>)}
         multiple
         className="file-input-hidden"
