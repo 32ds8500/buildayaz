@@ -1,7 +1,9 @@
 import JSZip from 'jszip';
-import type { FileNode, Project} from '../store/useStore';
-import { getLanguage } from '../store/useStore';
-import { generateId } from '../shared/utils/id';
+import { FileNode, Project, getLanguage } from '../store/useStore';
+
+function generateId(): string {
+  return generateId();
+}
 
 // Binary dosya uzantıları - bunları atla
 const binaryExtensions = new Set([
@@ -163,21 +165,22 @@ export async function importFromFiles(fileList: FileList): Promise<Project> {
     try {
       const content = await readFileAsText(file);
       // webkitRelativePath klasörden seçilince dolu olur
-      const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+      const path = (file as any).webkitRelativePath || file.name;
       
       // Yok sayılacak klasörleri atla
       const pathParts = path.split('/');
       if (pathParts.some((p: string) => shouldIgnore(p))) continue;
       
       // İlk klasör adını kaldır (klasör seçilince gelen ana klasör)
-       
+      // eslint-disable-next-line prefer-const
       let cleanPath = path;
       if (pathParts.length > 1) {
         cleanPath = pathParts.slice(1).join('/');
       }
       
       flatFiles.push({ path: cleanPath || file.name, content });
-    } catch {
+    } catch (err) {
+      console.debug('[importService] Skipping unreadable file:', err);
       // Okunamayan dosyayı atla
     }
   }
@@ -185,7 +188,7 @@ export async function importFromFiles(fileList: FileList): Promise<Project> {
   // Proje adını belirle
   let projectName = 'İçe Aktarılan Proje';
   if (fileList.length > 0) {
-    const firstPath = (fileList[0] as File & { webkitRelativePath?: string }).webkitRelativePath || '';
+    const firstPath = (fileList[0] as any).webkitRelativePath || '';
     if (firstPath) {
       projectName = firstPath.split('/')[0] || projectName;
     }
