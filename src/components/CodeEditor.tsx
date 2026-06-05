@@ -1,15 +1,18 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
-import { useStore } from '../store/useStore';
 import { EditorTabs } from './EditorTabs';
 import { analyzeFile } from '../services/errorAgent';
 import { Code2, Sparkles, Loader2, ShieldCheck } from 'lucide-react';
+import { useEditorStore } from '../store/editorStore';
+import { useActiveFileContent } from '../store/selectors';
+import { useProjectStore } from '../store/projectStore';
 
 type MonacoEditor = Parameters<OnMount>[0];
 type Monaco = Parameters<OnMount>[1];
 
 export const CodeEditor: React.FC = () => {
-  const { activeFile, updateFileContent, openFiles } = useStore();
+  const { activeFile, openFiles } = useEditorStore();
+  const { updateFileContent } = useProjectStore();
   const [editorReady, setEditorReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [diagCount, setDiagCount] = useState({ errors: 0, warnings: 0 });
