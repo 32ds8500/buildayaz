@@ -1,6 +1,5 @@
-import { generateId } from "../../shared/utils/id";
 /**
-
+import { generateId } from './../../shared/utils/id';
  * AgentTask Orchestration Runtime — Core Type System
  * 
  * Production-grade task execution engine for AI-native IDE.
@@ -15,7 +14,7 @@ import { generateId } from "../../shared/utils/id";
 export type TaskId = string & { readonly __brand: unique symbol };
 export type RunId = string & { readonly __brand: unique symbol };
 
-export function taskId(): TaskId { return (crypto.randomUUID ? crypto.randomUUID() : generateId()) as TaskId; }
+export function taskId(): TaskId { return (crypto.randomUUID ? crypto.randomUUID() : generateId(); }
 export function runId(): RunId { return (`run_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`) as RunId; }
 
 // ═══════════════════════════════════════════════════════════════
