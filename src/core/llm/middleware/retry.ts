@@ -19,7 +19,7 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   config: RetryConfig = DEFAULT_RETRY_CONFIG,
   signal?: AbortSignal,
-  _label = 'operation',
+  label = 'operation',
 ): Promise<T> {
   let lastError: unknown;
 
@@ -44,7 +44,7 @@ export async function withRetry<T>(
         waitMs = Math.max(waitMs, 5000);
       }
 
-      log.warn(`Attempt ${attempt + 1} failed, retrying in ${Math.round(waitMs)}ms`, {
+      log.warn(label, `Attempt ${attempt + 1} failed, retrying in ${Math.round(waitMs)}ms`, {
         error: err instanceof Error ? err.message : String(err),
       });
 
