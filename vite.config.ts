@@ -40,7 +40,6 @@ export default defineConfig({
           if (id.includes("@xterm")) return "xterm";
           if (id.includes("react-dom") || id.includes("react/")) return "react-vendor";
           if (id.includes("node_modules")) return "vendor";
-          return undefined;
         },
       },
     },
