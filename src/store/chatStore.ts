@@ -12,7 +12,7 @@ export interface ChatMessage {
   isStreaming?: boolean;
 }
 
-interface ChatState {
+export interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
 
@@ -37,3 +37,13 @@ export const useChatStore = create<ChatState>((set) => ({
   setLoading: (isLoading) => set({ isLoading }),
   clearMessages: () => set({ messages: [] }),
 }));
+
+// ─── Stable selectors ────────────────────────────────────────────────────────
+export const selectChatMessages = (s: ChatState) => s.messages;
+export const selectChatLoading  = (s: ChatState) => s.isLoading;
+export const selectChatActions  = (s: ChatState) => ({
+  addMessage:    s.addMessage,
+  updateMessage: s.updateMessage,
+  setLoading:    s.setLoading,
+  clearMessages: s.clearMessages,
+});
