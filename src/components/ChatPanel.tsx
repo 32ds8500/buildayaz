@@ -1,8 +1,9 @@
+import { sanitizeAiText, sanitizePath } from '../shared/utils/sanitize';
+import { logger } from '../core/llm/logging/logger';
+
+const log = logger.forModule('ChatPanel');
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { FileNode} from '../store/useStore';
-import { useStore, getLanguage } from '../store/useStore';
-import { useChatStore } from '../store/chatStore';
-import { useProjectStore } from '../store/projectStore';
+import { FileNode, getLanguage } from '../store/useStore';
 import { useAIStore, PROVIDER_META } from '../store/aiStore';
 import { streamAIResponse } from '../services/aiService';
 import {
@@ -11,6 +12,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateId } from './../shared/utils/id';
+import { useEditorStore } from '../store/editorStore';
+import { useProjectStore } from '../store/projectStore';
+import { useChatStore } from '../store/chatStore';
 
 function findFileInTree(files: FileNode[], path: string): FileNode | null {
   for (const f of files) {
@@ -20,13 +24,11 @@ function findFileInTree(files: FileNode[], path: string): FileNode | null {
   return null;
 }
 
-function getLanguageFromPath(filename: string): string {
-  return getLanguage(filename);
-}
 
 const CodeBlock: React.FC<{ code: string; language: string; filename?: string }> = ({ code, language, filename }) => {
   const [copied, setCopied] = useState(false);
-  const { activeFile, updateFileContent } = useStore();
+  const { activeFile } = useEditorStore();
+  const { updateFileContent } = useProjectStore();
   
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(code); } catch { /* fallback */ }
@@ -76,7 +78,7 @@ const CodeBlock: React.FC<{ code: string; language: string; filename?: string }>
 };
 
 const formatMessage = (content: string): React.ReactNode => {
-  const parts = content.split(/(```[\s\S]*?```)/g);
+  const parts = sanitizeAiText(content).split(/(```[\s\S]*?```)/g);
   
   return parts.map((part, i) => {
     if (part.startsWith('```') && part.endsWith('```')) {
@@ -121,7 +123,7 @@ const formatMessage = (content: string): React.ReactNode => {
 };
 
 
-const ProviderBadge: React.FC = () => {
+const ProviderBadge = React.memo(() => {
   const { config, isReadyToChat } = useAIStore();
   const meta = PROVIDER_META.find(m => m.id === config.provider);
   const ready = isReadyToChat();
@@ -132,13 +134,13 @@ const ProviderBadge: React.FC = () => {
       {!meta?.needsKey && ready && <span className="text-dark-400">(free)</span>}
     </span>
   );
-};
+});
+ProviderBadge.displayName = 'ProviderBadge';
 
 export const ChatPanel: React.FC = () => {
-  const {
-    chatMessages, chatLoading, addChatMessage, setChatLoading,
-    clearChat, currentProject, activeFile
-  } = useStore();
+  const { messages: chatMessages, isLoading: chatLoading, addMessage: addChatMessage, setLoading: setChatLoading, clearMessages: clearChat } = useChatStore();
+  const { currentProject } = useProjectStore();
+  const { activeFile } = useEditorStore();
   
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -192,7 +194,11 @@ export const ChatPanel: React.FC = () => {
         if (chunk.type === 'text' && chunk.content) {
           fullContent += chunk.content;
           // Update the message in-place for streaming effect
-          useChatStore.getState().updateMessage(assistantId, { content: fullContent });
+          const messages = useChatStore.getState().messages;
+          const updated = messages.map(m =>
+            m.id === assistantId ? { ...m, content: fullContent } : m
+          );
+          
         }
         if (chunk.type === 'file_changes' && chunk.fileChanges) {
           // Auto-apply file changes — with path traversal guard
@@ -204,12 +210,12 @@ export const ChatPanel: React.FC = () => {
             const isBlocked = BLOCKED.some(re => re.test(safePath));
             const hasValidPrefix = safePath.startsWith('/') || safePath.startsWith('./');
             if (isBlocked || !hasValidPrefix || safePath.length > 260) {
-              console.warn('[ChatPanel] Rejected unsafe filepath:', fc.path);
+              log.warn('Rejected unsafe filepath', { path: fc.path });
               toast.error(`Güvensiz dosya yolu reddedildi: ${fc.path}`);
               continue;
             }
             // ── Apply ─────────────────────────────────────────────────────────
-            const { updateFileContent, addFile } = useProjectStore.getState();
+            
             const exists = findFileInTree(currentProject.files, safePath);
             if (exists) {
               updateFileContent(safePath, fc.content);
@@ -223,7 +229,7 @@ export const ChatPanel: React.FC = () => {
                 path: safePath,
                 type: 'file',
                 content: fc.content,
-                language: getLanguageFromPath(fileName),
+                language: getLanguage(fileName),
               });
               toast.success(`✨ ${fileName} oluşturuldu`);
             }
@@ -231,13 +237,21 @@ export const ChatPanel: React.FC = () => {
         }
         if (chunk.type === 'error') {
           fullContent += '\n\n❌ ' + (chunk.content || 'Bir hata oluştu');
-          useChatStore.getState().updateMessage(assistantId, { content: fullContent });
+          const messages = useChatStore.getState().messages;
+          const updated = messages.map(m =>
+            m.id === assistantId ? { ...m, content: fullContent } : m
+          );
+          
         }
       }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        fullContent += '\n\n❌ Hata: ' + err.message;
-        useChatStore.getState().updateMessage(assistantId, { content: fullContent });
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        fullContent += '\n\n❌ Hata: ' + (err.message || 'Beklenmeyen bir hata oluştu');
+        const messages = useChatStore.getState().messages;
+        const updated = messages.map(m =>
+          m.id === assistantId ? { ...m, content: fullContent } : m
+        );
+        
       }
     } finally {
       setChatLoading(false);
