@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useStore } from '../store/useStore';
 import { Terminal, Trash2, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateId } from './../shared/utils/id';
+import { useProjectStore } from '../store/projectStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TerminalSession {
@@ -181,6 +181,7 @@ function lineTypeToCss(type: LineType): string {
 }
 
 // ─── Session factory ──────────────────────────────────────────────────────────
+let _sessIdx = 1;
 function makeSession(): TerminalSession {
   return {
     id: generateId(),
@@ -537,7 +538,7 @@ const SessionView: React.FC<SessionViewProps> = (props) => {
 
 // ─── Main TerminalPanel ───────────────────────────────────────────────────────
 export const TerminalPanel: React.FC = () => {
-  const { currentProject } = useStore();
+  const { currentProject } = useProjectStore();
   const [sessions, setSessions] = useState<TerminalSession[]>(() => [makeSession()]);
   const [activeId, setActiveId] = useState<string>(() => sessions[0].id);
   const [isMinimized, setIsMinimized] = useState(false);
