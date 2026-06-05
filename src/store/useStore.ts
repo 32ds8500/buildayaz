@@ -13,7 +13,6 @@ import { useProjectStore } from './projectStore';
 import { useEditorStore } from './editorStore';
 import { useChatStore } from './chatStore';
 import { useTerminalStore } from './terminalStore';
-import { useSettingsStore } from './settingsStore';
 
 // Re-export types used across the codebase
 export type { FileNode, Project } from './types';
@@ -23,12 +22,8 @@ export type { SidePanel, AppView } from './uiStore';
 export { getLanguage } from './projectUtils';
 
 // Convenience facade — merges all stores into one object
-// TODO: remove after full migration to domain stores
-
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const useStore = () => {
-  if (import.meta.env.DEV) {
-    console.warn("[DEPRECATED] useStore facade is deprecated. Use domain stores directly.");
-  }
   const ui      = useUIStore();
   const project = useProjectStore();
   const editor  = useEditorStore();
@@ -87,7 +82,7 @@ export const useStore = () => {
 };
 
 // Direct store access (for services that can't use hooks)
-export { useUIStore, useProjectStore, useEditorStore, useChatStore, useTerminalStore, useSettingsStore };
+export { useUIStore, useProjectStore, useEditorStore, useChatStore, useTerminalStore };
 
 // Static getState for non-React contexts (services, effects)
 export const getProjectState  = () => useProjectStore.getState();
