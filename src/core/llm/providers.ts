@@ -103,6 +103,18 @@ export function getProviderHealth(): ProviderHealth[] {
 // ─── Resilient chat with circuit breaker + retry + timeout ────────
 
 const REQUEST_TIMEOUT_MS = 60_000;
+const STREAM_TIMEOUT_MS   = 120_000;
+
+// ─── Request deduplication (prevent double-submit) ─────────────────
+const _inFlight = new Map<string, Promise<unknown>>();
+
+function deduplicateRequest<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = _inFlight.get(key);
+  if (existing) return existing as Promise<T>;
+  const p = fn().finally(() => _inFlight.delete(key));
+  _inFlight.set(key, p);
+  return p;
+}
 
 export async function resilientChat(
   request: LLMRequest,
@@ -127,12 +139,12 @@ export async function resilientChat(
       `${provider}/chat`,
     );
     circuitBreaker.recordSuccess(provider, Math.round(performance.now() - t0));
-    log.debug('Chat success', { model: request.config.model, ms: Math.round(performance.now() - t0) });
+    log.debug(provider, 'Chat success', { model: request.config.model, ms: Math.round(performance.now() - t0) });
     return result;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     circuitBreaker.recordFailure(provider, msg);
-    log.warn('Chat failed', { error: msg });
+    log.warn(provider, 'Chat failed', { error: msg });
     throw err;
   }
 }
@@ -156,7 +168,7 @@ export async function* resilientStream(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     circuitBreaker.recordFailure(provider, msg);
-    log.warn('Stream failed', { error: msg });
+    log.warn(provider, 'Stream failed', { error: msg });
     yield { type: 'error', error: msg };
   }
 }
@@ -175,7 +187,7 @@ export async function chatWithFallback(
     const result = await resilientChat(request);
     return result;
   } catch (err) {
-    log.warn('Primary failed, trying fallbacks', { error: err instanceof Error ? err.message : String(err) });
+    log.warn(primary, 'Primary failed, trying fallbacks', { error: err instanceof Error ? err.message : String(err) });
   }
 
   // Try fallback chain
@@ -199,7 +211,7 @@ export async function chatWithFallback(
     if (fallbackProvider_.capabilities.requiresApiKey && !fallbackConfig.apiKey && fallbackProvider !== 'pollinations' && fallbackProvider !== 'ollama') continue;
 
     try {
-      log.info(`Fallback attempt with model ${defaultModel}`);
+      log.info(fallbackProvider, `Fallback attempt with model ${defaultModel}`);
       const result = await resilientChat({ ...request, config: fallbackConfig });
       return { ...result, usedFallback: fallbackProvider };
     } catch { /* try next */ }
@@ -239,7 +251,7 @@ export async function* streamWithFallback(
     if (p.capabilities.requiresApiKey && !request.config.apiKey && fallbackProvider !== 'pollinations' && fallbackProvider !== 'ollama') continue;
 
     try {
-      log.info(`Stream fallback to ${defaultModel}`);
+      log.info(fallbackProvider, `Stream fallback to ${defaultModel}`);
       const fallbackReq = { ...request, config: { ...request.config, provider: fallbackProvider, model: defaultModel } };
       for await (const chunk of resilientStream(fallbackReq)) {
         yield { ...chunk, usedFallback: fallbackProvider };
