@@ -1,21 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { FileNode } from '../store/useStore';
-import { useStore } from '../store/useStore';
-import { useUIStore } from '../store/uiStore';
+import { FileNode } from '../store/useStore';
 import {
+import { useProjectStore } from '../store/projectStore';
+import { useUIStore } from '../store/uiStore';
+import { useEditorStore, flattenFileTree } from '../store/editorStore';
   Search, FileCode2, Terminal, Eye, MessageSquare,
   FolderTree, Home, GitBranch, Zap,
   Plus, ShieldCheck
 } from 'lucide-react';
 
-function flattenFiles(nodes: FileNode[]): FileNode[] {
-  const r: FileNode[] = [];
-  for (const n of nodes) {
-    if (n.type === 'file') r.push(n);
-    if (n.children) r.push(...flattenFiles(n.children));
-  }
-  return r;
-}
 
 interface Command {
   id: string;
@@ -32,10 +25,9 @@ export const CommandPalette: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const {
-    currentProject, openFile, setView,
-    toggleChat, toggleTerminal, togglePreview, toggleSidebar,
-  } = useStore();
+  const { currentProject } = useProjectStore();
+  const { openFile } = useEditorStore();
+  const { setView, toggleChat, toggleTerminal, togglePreview, toggleSidebar } = useUIStore();
 
   // Global shortcut Ctrl+K / Cmd+K
   useEffect(() => {
@@ -60,7 +52,7 @@ export const CommandPalette: React.FC = () => {
 
   // Dosya arama
   if (currentProject) {
-    const files = flattenFiles(currentProject.files);
+    const files = flattenFileTree(currentProject.files);
     files.forEach(f => {
       commands.push({
         id: 'file-' + f.path,
@@ -82,7 +74,7 @@ export const CommandPalette: React.FC = () => {
     { id: 'go-home', label: 'Ana Sayfaya Git', icon: <Home className="w-4 h-4 text-orange-400" />, action: () => { setView('landing'); setOpen(false); }, category: 'nav' },
     { id: 'new-project', label: 'Yeni Proje Oluştur', icon: <Plus className="w-4 h-4 text-blue-400" />, action: () => { setView('landing'); setOpen(false); }, category: 'nav' },
     { id: 'git-status', label: 'Git Durumu', icon: <GitBranch className="w-4 h-4 text-orange-400" />, action: () => { setOpen(false); }, category: 'action' },
-    { id: 'diagnostics', label: 'Kod Analizi Aç', desc: 'Otomatik hata ayıklama', icon: <ShieldCheck className="w-4 h-4 text-red-400" />, action: () => { const uiState = useUIStore.getState(); uiState.setActivePanel('diagnostics'); if (!uiState.sidebarOpen) uiState.toggleSidebar(); setOpen(false); }, category: 'action' },
+    { id: 'diagnostics', label: 'Kod Analizi Aç', desc: 'Otomatik hata ayıklama', icon: <ShieldCheck className="w-4 h-4 text-red-400" />, action: () => { const s = useStore.getState(); s.setActivePanel('diagnostics'); if (!s.sidebarOpen) s.toggleSidebar(); setOpen(false); }, category: 'action' },
   );
 
   const filtered = query
