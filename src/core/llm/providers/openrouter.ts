@@ -3,6 +3,7 @@
  * Free models: many via :free suffix or zero-cost models
  */
 import type { ILLMProvider, LLMRequest, LLMResponse, LLMStreamChunk, LLMConfig, ModelInfo, ProviderCapabilities, LLMErrorShape } from '../types';
+import { LLMError } from '../types';
 import { BaseAdapter } from './adapters/base';
 
 const FREE_MODELS: ModelInfo[] = [
