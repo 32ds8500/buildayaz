@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import type { FileNode } from '../store/useStore';
-import { useStore } from '../store/useStore';
+import { FileNode } from '../store/useStore';
 import {
+import { useEditorStore } from '../store/editorStore';
+import { useProjectStore } from '../store/projectStore';
   ChevronRight, ChevronDown, File, Folder, FolderOpen,
   FileCode2, FileJson, FileText, Image, Settings,
   Plus, Trash2, SquarePen, Ellipsis
@@ -34,7 +35,8 @@ interface FileTreeItemProps {
 }
 
 const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth }) => {
-  const { activeFile, openFile, deleteFile, renameFile, addFile } = useStore();
+  const { activeFile, openFile } = useEditorStore();
+  const { deleteFile, renameFile, addFile } = useProjectStore();
   const [expanded, setExpanded] = useState(depth < 2);
   const [showMenu, setShowMenu] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -207,7 +209,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth }) => {
 };
 
 export const FileTree: React.FC = () => {
-  const { currentProject } = useStore();
+  const { currentProject } = useProjectStore();
 
   if (!currentProject) return null;
 
