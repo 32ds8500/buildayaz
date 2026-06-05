@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import type { FileNode } from '../store/useStore';
-import { useStore } from '../store/useStore';
+import { FileNode } from '../store/useStore';
 import {
+import { useProjectStore } from '../store/projectStore';
+import { flattenFileTree } from '../store/editorStore';
   Globe, RefreshCw, Smartphone, Monitor, Tablet,
   ExternalLink, Maximize2, Minimize2, TriangleAlert,
 } from 'lucide-react';
@@ -9,18 +10,10 @@ import {
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
 // ─── File tree flattener ──────────────────────────────────────────────────────
-function flattenFiles(nodes: FileNode[]): FileNode[] {
-  const out: FileNode[] = [];
-  for (const n of nodes) {
-    if (n.type === 'file') out.push(n);
-    if (n.children) out.push(...flattenFiles(n.children));
-  }
-  return out;
-}
 
 // ─── HTML builder ─────────────────────────────────────────────────────────────
 function buildPreviewHtml(files: FileNode[]): string {
-  const all = flattenFiles(files);
+  const all = flattenFileTree(files);
 
   // ── Pure HTML project ──
   const htmlFile = all.find(
@@ -108,6 +101,7 @@ function buildPreviewHtml(files: FileNode[]): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com data: blob:; script-src 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'unsafe-inline' https://cdn.tailwindcss.com;">
   <title>Önizleme — ${appFile.name}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -202,7 +196,7 @@ function buildPreviewHtml(files: FileNode[]): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export const PreviewPanel: React.FC = () => {
-  const { currentProject } = useStore();
+  const { currentProject } = useProjectStore();
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop');
   const [refreshKey, setRefreshKey]   = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -348,7 +342,7 @@ export const PreviewPanel: React.FC = () => {
               src={blobUrl}
               className="flex-1 w-full border-none bg-white"
               title="Canlı Önizleme"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+              sandbox="allow-scripts allow-forms allow-modals"
               onError={() => setIframeError(true)}
             />
           ) : (
