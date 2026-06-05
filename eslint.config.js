@@ -3,7 +3,6 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
-import globals from 'globals';
 
 export default [
   js.configs.recommended,
@@ -16,38 +15,55 @@ export default [
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
       },
-      globals: {
-        ...globals.browser,
-        ...globals.es2020,
-      },
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
-      'react': reactPlugin,
-      'react-hooks': reactHooksPlugin,
+      'react':        reactPlugin,
+      'react-hooks':  reactHooksPlugin,
     },
     rules: {
-      // Disable base rule — TS rule handles this better
-      'no-unused-vars': 'off',
-      'no-undef': 'off',    // TypeScript handles this
-      // TypeScript
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      // ── TypeScript ─────────────────────────────────────────────
+      '@typescript-eslint/no-explicit-any':        'warn',
+      '@typescript-eslint/no-unused-vars':         ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
-      // React
-      'react/jsx-uses-react': 'off',
+      '@typescript-eslint/no-non-null-assertion':  'warn',
+
+      // ── React ──────────────────────────────────────────────────
+      'react/jsx-uses-react':   'off',
       'react/react-in-jsx-scope': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      // General
-      'no-console': ['warn', { allow: ['warn', 'error', 'debug', 'info'] }],
+      'react/self-closing-comp': ['warn', { component: true, html: false }],
+      'react/no-array-index-key': 'warn',
+
+      // ── General quality ────────────────────────────────────────
+      'no-console':   ['warn', { allow: ['warn', 'error', 'debug', 'info'] }],
       'prefer-const': 'error',
-      'no-var': 'error',
-      'eqeqeq': ['error', 'always'],
+      'no-var':       'error',
+      'eqeqeq':       ['error', 'always'],
+      'no-debugger':  'error',
+      'no-alert':     'warn',
+      'curly':        ['warn', 'multi-line'],
+
+      // ── Security ───────────────────────────────────────────────
+      'no-eval':        'error',
+      'no-new-func':    'error',
+      'no-script-url':  'error',
+
+      // ── Imports ────────────────────────────────────────────────
+      'no-duplicate-imports': 'error',
     },
     settings: { react: { version: 'detect' } },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '*.config.js', 'src/test/**'],
+    // Relaxed rules for test files
+    files: ['src/test/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    ignores: ['dist/**', 'node_modules/**', '*.config.js'],
   },
 ];
