@@ -58,7 +58,7 @@ export function flattenFileTree(nodes: FileNode[]): FileNode[] {
 
 // ─── Store ────────────────────────────────────────────────────────
 
-interface EditorState {
+export interface EditorState {
   openFiles: FileNode[];
   activeFile: FileNode | null;
 
@@ -118,3 +118,15 @@ export const useEditorStore = create<EditorState>((set) => ({
 
 // ─── Export tree utilities for projectStore use ────────────────────
 export { updateInTree, deleteFromTree, renameInTree, addToTree };
+
+// ─── Stable selectors ────────────────────────────────────────────────────────
+export const selectOpenFiles   = (s: EditorState) => s.openFiles;
+export const selectActiveFile  = (s: EditorState) => s.activeFile;
+export const selectEditorActions = (s: EditorState) => ({
+  openFile:   s.openFile,
+  closeFile:  s.closeFile,
+  setActiveFile: s.setActiveFile,
+  syncOpenFiles: s.syncOpenFiles,
+  updateOpenFileContent: s.updateOpenFileContent,
+  closeAll:   s.closeAll,
+});
