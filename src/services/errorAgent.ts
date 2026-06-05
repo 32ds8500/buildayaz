@@ -304,8 +304,8 @@ const jsonRules: RuleFn[] = [
     const fullText = lines.join('\n');
     try {
       JSON.parse(fullText);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+    } catch (e) {
+      const msg = String(e.message || e);
       const posMatch = msg.match(/position\s+(\d+)/i);
       let line = 1;
       if (posMatch) {
