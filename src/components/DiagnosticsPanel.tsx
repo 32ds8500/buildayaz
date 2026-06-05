@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { FileNode } from '../store/useStore';
-import { useStore } from '../store/useStore';
-import type { Diagnostic, AgentReport, Severity } from '../services/errorAgent';
-import { analyzeProject, applyFix, applyAllFixes } from '../services/errorAgent';
+import { FileNode } from '../store/useStore';
+import { analyzeProject, applyFix, applyAllFixes, Diagnostic, AgentReport, Severity } from '../services/errorAgent';
 import toast from 'react-hot-toast';
 import {
+import { useProjectStore } from '../store/projectStore';
+import { useEditorStore } from '../store/editorStore';
   TriangleAlert, Info, Lightbulb, Wrench,
   CircleCheckBig, CircleX, ChevronDown, ChevronRight,
   Zap, RefreshCw, Filter, FileCode2, Shield, Sparkles
@@ -52,7 +52,8 @@ const scoreRing = (score: number) => {
 };
 
 export const DiagnosticsPanel: React.FC = () => {
-  const { currentProject, openFile, updateFileContent } = useStore();
+  const { currentProject, updateFileContent } = useProjectStore();
+  const { openFile } = useEditorStore();
   const [report, setReport] = useState<AgentReport | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [filterSev, setFilterSev] = useState<Severity | 'all'>('all');
@@ -84,7 +85,6 @@ export const DiagnosticsPanel: React.FC = () => {
       runAnalysis();
     }, 1500); // 1.5sn debounce
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject?.files, autoMode, runAnalysis]);
 
   // İlk mount'ta analiz (deferred to avoid setState-in-effect lint warning)
@@ -93,9 +93,7 @@ export const DiagnosticsPanel: React.FC = () => {
       const t = setTimeout(() => runAnalysis(), 0);
       return () => clearTimeout(t);
     }
-    return undefined;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report, runAnalysis]);
+  }, [currentProject, report, runAnalysis]);
 
   const filtered = useMemo(() => {
     if (!report) return [];
