@@ -1,8 +1,7 @@
-import type { LLMRole } from '../llm/types';
 export interface AgentContext {
   projectFiles: { path: string; content: string; language: string }[];
   activeFile?: { path: string; content: string; language: string };
-  conversationHistory: { role: LLMRole; content: string }[];
+  conversationHistory: { role: string; content: string }[];
   userRequest: string;
 }
 
