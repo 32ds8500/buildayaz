@@ -532,7 +532,7 @@ export class TaskExecutionEngine {
       timed_out: 'task:timed_out',
     } as Record<string, string>)[newState] || 'task:state_changed';
 
-    this.emitEvent(eventType as Parameters<typeof this.emitEvent>[0], task, prev);
+    this.emitEvent(eventType as any, task, prev);
 
     // Cleanup on terminal states
     if (isTerminal(newState)) {
