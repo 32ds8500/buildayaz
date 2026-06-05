@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { FileNode } from '../store/useStore';
-import { useStore } from '../store/useStore';
+import { FileNode } from '../store/useStore';
 import { useAIStore } from '../store/aiStore';
 import { FileTree } from './FileTree';
 import { CodeEditor } from './CodeEditor';
@@ -10,15 +9,16 @@ import { PreviewPanel } from './PreviewPanel';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { TaskPanel } from './TaskPanel';
 import { AISettingsModal } from './AISettingsModal';
-import { SearchPanel } from './SearchPanel';
-import { GitPanel } from './GitPanel';
-import { ExtensionsPanel } from './ExtensionsPanel';
 import { exportProjectAsZip } from '../services/importService';
 import { analyzeProject } from '../services/errorAgent';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useZipExport } from '../hooks/useZipExport';
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import toast from 'react-hot-toast';
 import {
+import { useProjectStore } from '../store/projectStore';
+import { useUIStore } from '../store/uiStore';
+import { useEditorStore } from '../store/editorStore';
   Zap, FolderTree, Search, GitBranch, Puzzle,
   MessageSquare, Terminal, Eye, ChevronLeft,
   Menu, X, Play, Download,
@@ -29,15 +29,13 @@ import {
 type MobileTab = 'editor' | 'preview' | 'chat' | 'terminal';
 
 export const Workspace: React.FC = () => {
-  const {
-    currentProject, sidebarOpen, chatOpen, terminalOpen, previewOpen,
-    toggleSidebar, toggleChat, toggleTerminal, togglePreview,
-    activePanel, setActivePanel, setView, activeFile,
-    mobileMenuOpen, toggleMobileMenu,
-  } = useStore();
+  const { currentProject } = useProjectStore();
+  const { sidebarOpen, chatOpen, terminalOpen, previewOpen, toggleSidebar, toggleChat, toggleTerminal, togglePreview, activePanel, setActivePanel, setView, mobileMenuOpen, toggleMobileMenu } = useUIStore();
+  const { activeFile } = useEditorStore();
 
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor');
   const [isMobileView, setIsMobileView] = useState(() => window.innerWidth < 1024);
+  const { exportZip, isExporting } = useZipExport();
   const [showAISettings, setShowAISettings] = useState(false);
 
   // Reactive mobile detection
@@ -61,7 +59,7 @@ export const Workspace: React.FC = () => {
       errors: report.diagnostics.filter(d => d.severity === 'error').length,
       warnings: report.diagnostics.filter(d => d.severity === 'warning').length,
     };
-   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject]);
 
   if (!currentProject) return null;
@@ -80,7 +78,8 @@ export const Workspace: React.FC = () => {
     try {
       await exportProjectAsZip(currentProject);
       toast.success('Proje ZIP olarak indirildi!');
-    } catch {
+    } catch (err) {
+      console.warn('[Workspace] ZIP export failed:', err);
       toast.error('ZIP oluşturulurken hata oluştu');
     }
   };
@@ -416,6 +415,133 @@ export const Workspace: React.FC = () => {
 
       {/* AI Settings Modal */}
       {showAISettings && <AISettingsModal onClose={() => setShowAISettings(false)} />}
+    </div>
+  );
+};
+
+// Search Panel
+const SearchPanel: React.FC = () => {
+  const [query, setQuery] = useState('');
+  // currentProject already destructured above
+  const [results, setResults] = useState<{ path: string; line: string; lineNum: number }[]>([]);
+
+  const handleSearch = () => {
+    if (!query.trim() || !currentProject) return;
+    const found: { path: string; line: string; lineNum: number }[] = [];
+    
+    const searchFiles = (nodes: typeof currentProject.files) => {
+      for (const node of nodes) {
+        if (node.type === 'file' && node.content) {
+          const lines = node.content.split('\n');
+          lines.forEach((line, i) => {
+            if (line.toLowerCase().includes(query.toLowerCase())) {
+              found.push({ path: node.path, line: line.trim(), lineNum: i + 1 });
+            }
+          });
+        }
+        if (node.children) searchFiles(node.children);
+      }
+    };
+    
+    searchFiles(currentProject.files);
+    setResults(found.slice(0, 50));
+  };
+
+  return (
+    <div className="p-3 space-y-3">
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+        placeholder="Dosyalarda ara..."
+        className="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-xs text-white placeholder-dark-300 outline-none focus:border-accent-blue"
+      />
+      <div className="space-y-1 overflow-y-auto">
+        {results.map((r, i) => (
+          <div key={i} className="p-2 rounded bg-dark-700/50 text-xs">
+            <div className="text-accent-blue truncate">{r.path}:{r.lineNum}</div>
+            <div className="text-dark-200 truncate mt-0.5 font-mono">{r.line}</div>
+          </div>
+        ))}
+        {results.length === 0 && query && (
+          <p className="text-dark-300 text-xs text-center py-4">Sonuç bulunamadı</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Git Panel
+const GitPanel: React.FC = () => {
+  return (
+    <div className="p-3 space-y-4">
+      <div className="flex items-center gap-2 text-xs text-dark-200">
+        <GitBranch className="w-4 h-4 text-accent-blue" />
+        <span className="font-medium text-white">main</span>
+      </div>
+      <div>
+        <h4 className="text-xs font-medium text-dark-100 mb-2">Değişiklikler</h4>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 p-1.5 rounded hover:bg-dark-700/50 text-xs">
+            <span className="w-4 h-4 rounded-full bg-accent-orange/20 text-accent-orange text-[10px] flex items-center justify-center font-bold">M</span>
+            <span className="text-dark-200 truncate">src/App.tsx</span>
+          </div>
+          <div className="flex items-center gap-2 p-1.5 rounded hover:bg-dark-700/50 text-xs">
+            <span className="w-4 h-4 rounded-full bg-accent-green/20 text-accent-green text-[10px] flex items-center justify-center font-bold">A</span>
+            <span className="text-dark-200 truncate">src/components/Button.tsx</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <input
+          placeholder="Commit mesajı..."
+          className="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-xs text-white placeholder-dark-300 outline-none focus:border-accent-blue"
+        />
+        <button className="w-full mt-2 py-1.5 bg-accent-blue text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition">
+          ✓ Commit
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Extensions Panel
+const ExtensionsPanel: React.FC = () => {
+  const extensions = [
+    { name: 'ESLint', desc: 'JavaScript/TypeScript linting', installed: true },
+    { name: 'Prettier', desc: 'Kod biçimlendirici', installed: true },
+    { name: 'Tailwind IntelliSense', desc: 'Tailwind otomatik tamamlama', installed: true },
+    { name: 'Auto Rename Tag', desc: 'HTML/JSX tag adlandırma', installed: false },
+    { name: 'GitLens', desc: 'Gelişmiş Git özellikleri', installed: false },
+    { name: 'Error Lens', desc: 'Satır içi hata gösterimi', installed: false },
+  ];
+
+  return (
+    <div className="p-3 space-y-3">
+      <input
+        placeholder="Eklenti ara..."
+        className="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-xs text-white placeholder-dark-300 outline-none focus:border-accent-blue"
+      />
+      <div className="space-y-2">
+        {extensions.map((ext) => (
+          <div key={ext.name} className="flex items-start gap-3 p-2 rounded-lg hover:bg-dark-700/50">
+            <div className="w-8 h-8 rounded-lg bg-dark-600 flex items-center justify-center flex-shrink-0">
+              <Puzzle className="w-4 h-4 text-accent-purple" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium text-white">{ext.name}</div>
+              <div className="text-[10px] text-dark-300">{ext.desc}</div>
+            </div>
+            <button className={`px-2 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
+              ext.installed
+                ? 'bg-accent-green/20 text-accent-green'
+                : 'bg-dark-600 text-dark-200 hover:bg-accent-blue/20 hover:text-accent-blue'
+            }`}>
+              {ext.installed ? 'Yüklü' : 'Yükle'}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
