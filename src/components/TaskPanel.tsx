@@ -31,7 +31,7 @@ const TaskRow: React.FC<{ task: AgentTask }> = ({ task }) => {
   const cfg = stateConfig[task.state] || stateConfig.pending;
   const stream = getTaskStream(task.id);
   const isRunning = task.state === 'running' || task.state === 'scheduled';
-   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const [now, setNow] = React.useState(() => Date.now());
   React.useEffect(() => {
     if (!isRunning) return;
