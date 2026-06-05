@@ -9,9 +9,11 @@ import { CircleHelp } from 'lucide-react';
 import { loadProjectsAsync } from './store/persistence';
 import { initAutosave } from './store/autosave';
 import { useProjectStore } from './store/projectStore';
+import { useUIStore } from '../store/uiStore';
+import { useProjectStore } from '../store/projectStore';
 
 const App: React.FC = () => {
-  const { view } = useStore();
+  const { view } = useUIStore();
   const [showGuide, setShowGuide] = useState(false);
 
   // ── Async IDB hydration: upgrade from localStorage on first load ──
@@ -23,9 +25,7 @@ const App: React.FC = () => {
       if (idbProjects.length !== current.length) {
         useProjectStore.setState({ projects: idbProjects });
       }
-    }).catch((error) => {
-      console.error('IndexedDB hydration failed:', error);
-    });
+    }).catch((err) => { console.warn('[App] IDB hydration failed, using localStorage:', err instanceof Error ? err.message : String(err)); });
   }, []);
 
   // ── Autosave: periodic + visibilitychange + beforeunload ──
