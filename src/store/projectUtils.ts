@@ -104,9 +104,24 @@ const templatesMap: Record<string, FileNode[]> = {
 };
 
 
+    }
+    if (f.children) {
+      return { ...f, children: addFileToTree(f.children, parentPath, newFile) };
+    }
+    return f;
+  });
+};
+
+    }
+    return f;
+  });
+};
+
+
 /** Deep-clone template files (avoid shared reference mutations) */
 export function getDefaultFiles(template: string): FileNode[] {
   const files = templatesMap[template] ?? reactTemplate;
+  // structuredClone: native deep clone, faster than manual serialize/deserialize
   return structuredClone(files) as FileNode[];
 }
 
