@@ -7,9 +7,10 @@ import {
   resilientStream,
   streamWithFallback,
   trimMessagesToContext,
+  getProvider,
   getModelInfo,
 } from '../llm';
-import type { LLMConfig, LLMMessage, LLMStreamChunk, LLMRequest } from '../llm';
+import type { LLMConfig, LLMMessage, LLMStreamChunk } from '../llm';
 import type { AgentContext, AgentAction, FileChange } from './types';
 import { logger } from '../llm/logging/logger';
 
@@ -125,7 +126,7 @@ export async function* streamAgentResponse(
   const allMsgs = [systemMsg, ...rawHistory, userMsg];
   const trimmed = trimMessagesToContext(allMsgs, contextWindow, modelInfo?.maxOutputTokens ?? 1024);
 
-  const request: LLMRequest = {
+  const request = {
     messages: trimmed,
     config: { ...config, apiKey: config.apiKey },
     signal,
@@ -157,7 +158,7 @@ export async function* streamAgentResponse(
           break;
         case 'usage':
           if (c.usage) {
-            log.debug('Token usage', { tokens: c.usage.totalTokens, fallback: usedFallback });
+            log.debug('Orchestrator', 'Token usage', { tokens: c.usage.totalTokens, fallback: usedFallback });
           }
           break;
         case 'error':
@@ -169,7 +170,7 @@ export async function* streamAgentResponse(
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log.error('Stream failed', { error: msg });
+    log.error('Orchestrator', 'Stream failed', { error: msg });
     yield { type: 'error', message: `İstek başarısız: ${msg}` };
     return;
   }
