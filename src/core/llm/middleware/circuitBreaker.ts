@@ -49,7 +49,7 @@ class CircuitBreakerRegistry {
       if (elapsed >= this.cfg.timeoutMs) {
         c.state = 'half-open';
         c.successes = 0;
-        log.info('Circuit half-open — testing recovery');
+        log.info(provider, 'Circuit half-open — testing recovery');
       } else {
         return true;
       }
@@ -67,7 +67,7 @@ class CircuitBreakerRegistry {
       if (c.successes >= this.cfg.successThreshold) {
         c.state = 'closed';
         c.failures = 0;
-        log.info('Circuit closed — recovery confirmed');
+        log.info(provider, 'Circuit closed — recovery confirmed');
       }
     } else {
       c.failures = Math.max(0, c.failures - 1); // decay failures on success
@@ -82,7 +82,7 @@ class CircuitBreakerRegistry {
     if (c.state === 'half-open' || c.failures >= this.cfg.failureThreshold) {
       c.state = 'open';
       c.openedAt = Date.now();
-      log.warn(`Circuit OPEN after ${c.failures} failures`, { error: String(error) });
+      log.warn(provider, `Circuit OPEN after ${c.failures} failures`, { error });
     }
   }
 
@@ -115,7 +115,7 @@ class CircuitBreakerRegistry {
   reset(provider: LLMProvider, model?: string) {
     const k = this.key(provider, model);
     this.circuits.delete(k);
-    log.info('Circuit manually reset');
+    log.info(provider, 'Circuit manually reset');
   }
 }
 
