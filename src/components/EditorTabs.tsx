@@ -1,6 +1,6 @@
 import React from 'react';
-import { useStore } from '../store/useStore';
 import { X, FileCode2, FileJson, FileText, File } from 'lucide-react';
+import { useEditorStore } from '../store/editorStore';
 
 const getTabIcon = (name: string): React.ReactNode => {
   const ext = name.split('.').pop()?.toLowerCase() || '';
@@ -13,7 +13,7 @@ const getTabIcon = (name: string): React.ReactNode => {
 };
 
 export const EditorTabs: React.FC = () => {
-  const { openFiles, activeFile, setActiveFile, closeFile } = useStore();
+  const { openFiles, activeFile, setActiveFile, closeFile } = useEditorStore();
 
   if (openFiles.length === 0) return null;
 
